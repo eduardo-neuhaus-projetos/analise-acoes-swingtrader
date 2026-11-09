@@ -1,12 +1,86 @@
 # Swing B3
 
-Aplicativo web pessoal que transforma candles diários da B3 em sinais, trades simulados e um dashboard. As análises ficam em duas abas que nunca se misturam: **brapi** (janela de 3 meses) e **Yahoo** (histórico desde 01/01/2010). São 21 setups, descritos em [`SETUPS_SWING_TRADE.md`](SETUPS_SWING_TRADE.md).
+**Backtest e acompanhamento simulado de swing trade em ações da B3.** O app baixa candles diários, aplica 21 setups conhecidos do mercado brasileiro e internacional e mostra, trade a trade, onde cada regra deu sinal, entrou e saiu, com métricas, curva de capital e comparação entre setups e ativos.
 
-Requisitos e regras: [`PRD aplicativo de swing trade para a B3.md`](PRD%20aplicativo%20de%20swing%20trade%20para%20a%20B3.md).
+> Resultados são simulações. Não representam ordens executadas e não são recomendação de investimento. Resultado passado não garante resultado futuro.
 
-Resultados são simulações, não representam ordens executadas e não são recomendação de investimento.
+![Análise do PETR4 com o Larry Williams 9.1: métricas, gráfico com entradas e saídas e o detalhe de um trade explicando cada regra](docs/imagens/analise.png)
+
+## Destaques
+
+- **21 setups em cinco famílias**, cada um com regras numéricas documentadas e parâmetros editáveis na tela:
+
+  | Família | Setups |
+  | --- | --- |
+  | Larry Williams | 9.1, 9.2, 9.3, 9.4 |
+  | Candle e preço | Setup 123, PFR, Ponto Contínuo, Barra Elefante, Inside Bar |
+  | Padrões de candle (Bulkowski) | Linha de separação de alta, Mat Hold, Padrão penetrante, Padrão deliberante |
+  | Indicadores | IFR2, Recuo com IFR curto (Stormer), Agulhada do Didi, Cruzamento de médias, Bollinger |
+  | Internacionais | Holy Grail, 1-2-3 e Ross Hook, Tartarugas (Donchian) |
+
+- **Cada trade se explica.** Ao clicar num trade, o gráfico centraliza nele e o painel conta o que aconteceu em cada candle: sinal, gatilho, entrada, stop e saída, com o preço e a regra aplicada.
+- **Duas fontes de dados que nunca se misturam:** Yahoo Finance, com histórico desde 01/01/2010, e brapi, com janela de 3 meses. Cada uma tem sua aba, e a falha de uma não contamina a outra.
+- **Métricas completas:** taxa de acerto, payoff, fator de lucro, expectativa em R, drawdown, tempo exposto e curva de capital contra o buy and hold e o Ibovespa.
+- **Comparar** até 5 combinações de ativo, setup e parâmetros lado a lado.
+- **Acompanhamento:** marca um setup num ativo e vê, a cada pregão, se há sinal ou ordem para o dia seguinte.
+- **Avisos honestos:** alertas de qualidade nos candles, trades que dependem da ordem dos eventos dentro do candle e custos zerados aparecem na tela, em vez de ficarem escondidos no número final.
+
+## Telas
+
+| Dashboard | Comparar |
+| --- | --- |
+| ![Curva de capital do setup contra buy and hold e Ibovespa, com a queda da curva](docs/imagens/dashboard.png) | ![Quatro combinações de ativo e setup com as métricas lado a lado](docs/imagens/comparar.png) |
+
+**Setups**: um painel por família, com a descrição e a origem de cada setup, para escolher quais aparecem nas análises.
+
+![Tela Setups com os painéis Larry Williams, Candle e preço, Padrões de candle e Indicadores](docs/imagens/setups.png)
+
+## Como foi feito
+
+O projeto começou por um documento de requisitos ([PRD](PRD%20aplicativo%20de%20swing%20trade%20para%20a%20B3.md)) e por um catálogo com a regra exata de cada setup ([`SETUPS_SWING_TRADE.md`](SETUPS_SWING_TRADE.md)). Quando a fonte original (livro, vídeo ou artigo) descreve um setup só no gráfico, o catálogo fixa limites numéricos e registra a adaptação. O código veio depois, e cada regra virou teste.
+
+```mermaid
+flowchart LR
+    Y[Yahoo Finance] --> P[Provedores<br/>uma classe por fonte]
+    B[brapi] --> P
+    P --> D[Dados<br/>validação, ajuste e SQLite]
+    D --> M[Motor de ordens]
+    S[21 setups<br/>regras + parâmetros] --> M
+    M --> E[Métricas]
+    E --> API[API FastAPI]
+    API --> UI[React + TypeScript<br/>Lightweight Charts e ECharts]
+```
+
+Algumas decisões que sustentam o resultado:
+
+- **Um único motor de ordens.** Os setups não executam nada: declaram indicadores e pedem ordens (compra stop, compra na abertura, alvo, stop, saída no fechamento). O mesmo motor roda o backtest e o acompanhamento, então os dois nunca divergem.
+- **Sem olhar o futuro.** O setup só recebe dados até o candle atual, e a ordem vale a partir do pregão seguinte. Um teste de contrato roda todos os setups registrados e confere isso, além de reprodutibilidade e formato das ordens.
+- **Premissas à vista.** Sem dados intradiários, não se sabe se o stop ou o alvo veio primeiro dentro do mesmo candle. O motor assume o pior caso e marca o trade com aviso.
+- **Preços ajustados** por proventos, guardando também o valor recebido da fonte.
+- **Setups versionados.** Mudou a regra, sobe a versão, e os resultados antigos continuam ligados à versão que os gerou.
+- **Histórico desde 2010**, aplicado de ponta a ponta: download, banco, simulação e o calendário da tela.
+
+### Tecnologias
+
+| Camada | Ferramentas |
+| --- | --- |
+| Backend | Python 3.13, FastAPI, pydantic, pandas, NumPy, SQLite, yfinance, httpx |
+| Frontend | React 19, TypeScript, Vite, TradingView Lightweight Charts, Apache ECharts |
+| Qualidade | pytest: 305 testes, com casos numéricos de cada setup e respostas gravadas dos provedores (sem rede) |
+| Publicação | Docker: um container serve a API e a interface no mesmo endereço |
 
 ## Como rodar
+
+### Com Docker
+
+```bash
+docker build -t swing-b3 .
+docker run -p 7860:7860 swing-b3
+```
+
+Abra <http://localhost:7860>. O banco começa vazio, e cada ativo consultado é baixado do Yahoo desde 2010 em poucos segundos.
+
+### Para desenvolver
 
 Precisa de Python 3.11+ e Node 20+. No Windows, dê dois cliques em `iniciar.bat`: ele instala o que faltar, sobe backend e frontend e abre o navegador.
 
@@ -50,18 +124,18 @@ Abra <http://127.0.0.1:5173>. A documentação da API fica em <http://127.0.0.1:
 | Motor e Larry Williams 9.1, com todos os casos do PRD como teste | Pronto |
 | Catálogo de 21 setups, com casos numéricos de cada um e opções em lista no formulário | Pronto |
 | Registro de setups, com formulário gerado pelo esquema | Pronto |
-| Análise, Dashboard, Comparar, Dados, Configurações | Pronto |
+| Análise, Dashboard, Comparar, Setups, Dados, Configurações | Pronto |
 | Acompanhamento: lista, estados, ordens, histórico sem duplicar | Pronto, com atualização **manual** |
 | Barra Meus ativos em todas as telas: adicionar, trocar com um clique, tirar da lista | Pronto |
 | Tema escuro e claro, teclado, memória da última seleção, tablet e celular | Pronto |
 
 ### Ainda não incluído
 
-- Atualização automática após o pregão (APScheduler, RF-31) e recuperação de pregões perdidos.
+- Atualização automática após o pregão e recuperação de pregões perdidos.
 - Backup e restauração do banco. **Até lá, copie `backend/data/` de vez em quando:** os candles acumulados da brapi não podem ser baixados de novo.
-- Comparação entre provedores (RF-08, desejável).
+- Comparação entre provedores.
 - Versões de venda dos setups, pirâmide e saída parcial. As adaptações à especificação estão no PRD, em "Catálogo de setups".
-- Filtro por origem do trade no dashboard (RF-42): os trades de acompanhamento ainda não entram no dashboard.
+- Trades de acompanhamento no dashboard.
 - Edição de item de acompanhamento: para mudar parâmetros, remova e crie outro. O histórico fica guardado.
 
 ## Testes
@@ -83,6 +157,6 @@ Ao mudar a regra de um setup, aumente `versao`: os resultados antigos seguem lig
 
 ## Licenças e dados
 
-Candles com [TradingView Lightweight Charts](https://github.com/tradingview/lightweight-charts) (Apache 2.0, com atribuição no rodapé) e painéis com Apache ECharts. O yfinance não tem vínculo com a Yahoo e se destina a uso pessoal. Os dados baixados ficam neste computador.
+Candles com [TradingView Lightweight Charts](https://github.com/tradingview/lightweight-charts) (Apache 2.0, com atribuição no rodapé) e painéis com Apache ECharts. O yfinance não tem vínculo com a Yahoo e se destina a uso pessoal e educacional.
 
-O aplicativo não tem login: mantenha-o em `127.0.0.1` ou em rede privada.
+O aplicativo não tem login: quem acessa o endereço pode baixar ativos, mudar configurações e criar acompanhamentos. Na versão publicada isso é proposital, para mostrar o app completo.
