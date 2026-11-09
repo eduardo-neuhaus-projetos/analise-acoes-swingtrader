@@ -1,0 +1,9 @@
+# Fora da imagem: dados locais (banco e token da brapi), ambientes e builds da máquina.
+backend/data/
+backend/.venv/
+**/__pycache__/
+**/.pytest_cache/
+frontend/node_modules/
+frontend/dist/
+exemplo.zip
+.git/
