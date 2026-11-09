@@ -1,7 +1,7 @@
 """API do aplicativo. Sem login: quem acessa o endereço pode mudar dados e configurações.
 
 Com o build do frontend disponível, o mesmo servidor entrega a interface, num endereço só
-(é assim que roda no container de publicação). No desenvolvimento, o Vite continua na 5173.
+(é assim que roda no container publicado no Render). No desenvolvimento, o Vite continua na 5173.
 """
 from __future__ import annotations
 

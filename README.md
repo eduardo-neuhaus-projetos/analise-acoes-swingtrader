@@ -2,6 +2,8 @@
 
 **Backtest e acompanhamento simulado de swing trade em ações da B3.** O app baixa candles diários, aplica 21 setups conhecidos do mercado brasileiro e internacional e mostra, trade a trade, onde cada regra deu sinal, entrou e saiu, com métricas, curva de capital e comparação entre setups e ativos.
 
+**Demonstração online: <https://swing-b3.onrender.com>**. Hospedada no plano gratuito do Render: depois de 15 minutos sem acesso o servidor dorme, e o primeiro acesso leva até 1 minuto para acordar. O banco começa vazio a cada reinício, e o primeiro acesso a um ativo baixa do Yahoo o histórico desde 2010.
+
 > Resultados são simulações. Não representam ordens executadas e não são recomendação de investimento. Resultado passado não garante resultado futuro.
 
 ![Análise do PETR4 com o Larry Williams 9.1: métricas, gráfico com entradas e saídas e o detalhe de um trade explicando cada regra](docs/imagens/analise.png)
@@ -67,7 +69,7 @@ Algumas decisões que sustentam o resultado:
 | Backend | Python 3.13, FastAPI, pydantic, pandas, NumPy, SQLite, yfinance, httpx |
 | Frontend | React 19, TypeScript, Vite, TradingView Lightweight Charts, Apache ECharts |
 | Qualidade | pytest: 305 testes, com casos numéricos de cada setup e respostas gravadas dos provedores (sem rede) |
-| Publicação | Docker: um container serve a API e a interface no mesmo endereço |
+| Publicação | Docker e Render: um container serve a API e a interface no mesmo endereço, publicado a cada push no `main` |
 
 ## Como rodar
 

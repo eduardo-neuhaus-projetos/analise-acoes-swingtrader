@@ -1,6 +1,6 @@
 # Swing B3 num container só: o FastAPI serve a API e o build do React no mesmo endereço.
-# Funciona no Hugging Face Spaces (porta 7860, usuário 1000) e em serviços que definem PORT, como o Render.
-# O banco fica em /app/data, dentro do container: em hospedagem gratuita ele começa vazio a cada
+# Publicado no Render (plano gratuito), que define PORT; sem PORT, usa a 7860.
+# O banco fica em /app/data, dentro do container: no plano gratuito ele começa vazio a cada
 # reinício, e o app baixa de novo do Yahoo, desde 2010, os ativos consultados.
 
 # 1. Build do frontend
